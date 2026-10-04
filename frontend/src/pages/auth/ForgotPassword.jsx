@@ -97,7 +97,7 @@ export default function ForgotPassword() {
 
         {/* Logo */}
         <div className="auth-logo-wrap">
-          <img src="/helpblood.png" alt="HemoLink" className="auth-logo" onError={e => { e.target.style.display='none'; }} />
+          <img src="/logo-icon.png" alt="HemoLink" className="auth-logo" onError={e => { e.target.style.display='none'; }} />
           <h1 className="auth-brand"> HemoLink</h1>
         </div>
 
