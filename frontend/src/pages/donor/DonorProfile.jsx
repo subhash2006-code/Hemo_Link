@@ -100,7 +100,25 @@ export default function DonorProfile() {
                     ? <select value={draft[key] || ''} onChange={e => setDraft(d => ({ ...d, [key]: e.target.value }))} style={{ width:'100%', padding:'9px 12px', border:'1.5px solid #d1d5db', borderRadius:8, fontSize:14 }}>
                         <option value="">Select</option><option>Male</option><option>Female</option><option>Other</option>
                       </select>
-                    : <input type={type || 'text'} value={draft[key] || ''} onChange={e => setDraft(d => ({ ...d, [key]: e.target.value }))} style={{ width:'100%', padding:'9px 12px', border:'1.5px solid #d1d5db', borderRadius:8, fontSize:14 }} />
+                    : <input
+    type={key === 'phone' ? 'tel' : (type || 'text')}
+    maxLength={key === 'phone' ? 10 : undefined}
+    value={draft[key] || ''}
+    onChange={e => {
+      const value = key === 'phone'
+        ? e.target.value.replace(/\D/g, '')
+        : e.target.value;
+
+      setDraft(d => ({ ...d, [key]: value }));
+    }}
+    style={{
+      width:'100%',
+      padding:'9px 12px',
+      border:'1.5px solid #d1d5db',
+      borderRadius:8,
+      fontSize:14
+    }}
+  />
                 ) : (
                   <p style={{ fontWeight:600, fontSize:15, margin:0, color: profile[key] ? '#111827' : '#9ca3af' }}>
                     {(type === 'date' || key.includes('date')) && profile[key] ? new Date(profile[key]).toLocaleDateString() : (profile[key] ?? '—')}
