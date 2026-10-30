@@ -104,3 +104,62 @@ export const publicApi = {
   getRequestById: (id) => request(`/api/public/requests/${id}`),
 };
 
+// ════════════════════════════════════════════════════════════
+// ADMIN API (Strictly protected by server-side role=admin)
+// ════════════════════════════════════════════════════════════
+export const adminApi = {
+  // Dashboard & Stats
+  getDashboardData: () => request('/api/admin/dashboard', {}, getToken()),
+  getStats:         () => request('/api/admin/stats', {}, getToken()),
+
+  // User Management
+  getUsers:         (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/api/admin/users${qs ? '?' + qs : ''}`, {}, getToken());
+  },
+  getUserById:      (id) => request(`/api/admin/users/${id}`, {}, getToken()),
+  updateUserStatus: (id, status) => request(`/api/admin/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, getToken()),
+  deleteUser:       (id) => request(`/api/admin/users/${id}`, { method: 'DELETE' }, getToken()),
+  createAdmin:      (body) => request('/api/admin/create-admin', { method: 'POST', body: JSON.stringify(body) }, getToken()),
+
+  // Donors & Receivers
+  getDonors:        (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/api/admin/donors${qs ? '?' + qs : ''}`, {}, getToken());
+  },
+  getReceivers:     (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/api/admin/receivers${qs ? '?' + qs : ''}`, {}, getToken());
+  },
+
+  // Blood Requests
+  getBloodRequests: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/api/admin/blood-requests${qs ? '?' + qs : ''}`, {}, getToken());
+  },
+  getBloodRequestById: (id) => request(`/api/admin/blood-requests/${id}`, {}, getToken()),
+  updateBloodRequestStatus: (id, status) => request(`/api/admin/blood-requests/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, getToken()),
+  deleteBloodRequest: (id) => request(`/api/admin/blood-requests/${id}`, { method: 'DELETE' }, getToken()),
+
+  // Emergency Requests
+  getEmergencyRequests: () => request('/api/admin/emergency-requests', {}, getToken()),
+  broadcastEmergency:   (id) => request(`/api/admin/emergency-requests/${id}/broadcast`, { method: 'POST' }, getToken()),
+
+  // Analytics & Reports
+  getAnalytics:     () => request('/api/admin/analytics', {}, getToken()),
+  getReports:       (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/api/admin/reports${qs ? '?' + qs : ''}`, {}, getToken());
+  },
+
+  // Activity Logs
+  getActivityLogs:  (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/api/admin/logs${qs ? '?' + qs : ''}`, {}, getToken());
+  },
+
+  // System Settings
+  getSettings:      () => request('/api/admin/settings', {}, getToken()),
+  updateSettings:   (body) => request('/api/admin/settings', { method: 'PUT', body: JSON.stringify(body) }, getToken()),
+};
+

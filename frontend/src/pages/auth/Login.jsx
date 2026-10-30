@@ -50,6 +50,8 @@ export default function Login() {
       });
       if (redirect) {
         navigate(redirect, { replace: true });
+      } else if (data.user.role === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
       } else if (data.user.role === 'donor') {
         navigate('/donor/dashboard', { replace: true });
       } else {

@@ -54,12 +54,13 @@ export function AuthProvider({ children }) {
   const isAuthenticated   = Boolean(token && user);
   const isDonor           = user?.role === 'donor';
   const isReceiver        = user?.role === 'receiver';
+  const isAdmin           = user?.role === 'admin';
   const profileComplete   = user?.profileComplete ?? false;
 
   return (
     <AuthContext.Provider value={{
       user, token, loading,
-      isAuthenticated, isDonor, isReceiver, profileComplete,
+      isAuthenticated, isDonor, isReceiver, isAdmin, profileComplete,
       login, logout, updateUser,
     }}>
       {children}

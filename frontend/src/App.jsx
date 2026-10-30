@@ -25,6 +25,19 @@ import SendRequest       from './pages/receiver/SendRequest';
 import MyRequests        from './pages/receiver/MyRequests';
 import ReceiverProfile   from './pages/receiver/ReceiverProfile';
 
+// Admin pages
+import AdminLogin             from './pages/admin/AdminLogin';
+import AdminDashboard         from './pages/admin/AdminDashboard';
+import AdminUsers             from './pages/admin/AdminUsers';
+import AdminDonors            from './pages/admin/AdminDonors';
+import AdminReceivers         from './pages/admin/AdminReceivers';
+import AdminBloodRequests     from './pages/admin/AdminBloodRequests';
+import AdminEmergencyRequests from './pages/admin/AdminEmergencyRequests';
+import AdminAnalytics         from './pages/admin/AdminAnalytics';
+import AdminReports           from './pages/admin/AdminReports';
+import AdminActivityLogs      from './pages/admin/AdminActivityLogs';
+import AdminSettings          from './pages/admin/AdminSettings';
+
 // Guards
 import ProtectedRoute from './components/common/ProtectedRoute';
 
@@ -32,7 +45,8 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 function RootRedirect() {
   const { isAuthenticated, user } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return user.role === 'donor'
+  if (user?.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+  return user?.role === 'donor'
     ? <Navigate to="/donor/dashboard"    replace />
     : <Navigate to="/receiver/dashboard" replace />;
 }
@@ -49,6 +63,7 @@ export default function App() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password"  element={<ResetPassword />} />
       <Route path="/request/:id"     element={<PublicRequestView />} />
+      <Route path="/admin/login"     element={<AdminLogin />} />
 
       {/* ── DONOR Protected Routes ── */}
       <Route element={<ProtectedRoute allowedRole="donor" />}>
@@ -65,6 +80,21 @@ export default function App() {
         <Route path="/receiver/request"   element={<SendRequest />} />
         <Route path="/receiver/requests"  element={<MyRequests />} />
         <Route path="/receiver/profile"   element={<ReceiverProfile />} />
+      </Route>
+
+      {/* ── ADMIN Protected Routes ── */}
+      <Route element={<ProtectedRoute allowedRole="admin" />}>
+        <Route path="/admin"                    element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/admin/dashboard"          element={<AdminDashboard />} />
+        <Route path="/admin/users"              element={<AdminUsers />} />
+        <Route path="/admin/donors"             element={<AdminDonors />} />
+        <Route path="/admin/receivers"          element={<AdminReceivers />} />
+        <Route path="/admin/blood-requests"     element={<AdminBloodRequests />} />
+        <Route path="/admin/emergency-requests" element={<AdminEmergencyRequests />} />
+        <Route path="/admin/analytics"          element={<AdminAnalytics />} />
+        <Route path="/admin/reports"            element={<AdminReports />} />
+        <Route path="/admin/activity-logs"      element={<AdminActivityLogs />} />
+        <Route path="/admin/settings"           element={<AdminSettings />} />
       </Route>
 
       {/* Catch-all */}

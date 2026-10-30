@@ -42,11 +42,19 @@ async function verifyToken(req, res, next) {
 // Role guard — pass 'donor' or 'receiver'
 function requireRole(role) {
   return (req, res, next) => {
-    if (req.user.role !== role) {
+    if (!req.user || req.user.role !== role) {
       return res.status(403).json({ message: `Access denied. ${role} role required.` });
     }
     next();
   };
 }
 
-module.exports = { verifyToken, requireRole };
+// Admin guard — strictly verifies role === 'admin'
+function requireAdmin(req, res, next) {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied. Administrator privileges required.' });
+  }
+  next();
+}
+
+module.exports = { verifyToken, requireRole, requireAdmin };

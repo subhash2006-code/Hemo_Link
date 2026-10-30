@@ -10,6 +10,7 @@ const authRoutes     = require('./routes/auth.routes');
 const donorRoutes    = require('./routes/donor.routes');
 const receiverRoutes = require('./routes/receiver.routes');
 const publicRoutes   = require('./routes/public.routes');
+const adminRoutes    = require('./routes/admin.routes');
 
 const path       = require('path');
 const app  = express();
@@ -34,6 +35,7 @@ app.use('/api/public',   publicRoutes);
 app.use('/api/auth',     authRoutes);
 app.use('/api/donor',    donorRoutes);
 app.use('/api/receiver', receiverRoutes);
+app.use('/api/admin',    adminRoutes);
 
 // ─── 404 handler ──────────────────────────────────────────────
 app.use((_req, res) => {

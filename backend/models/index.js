@@ -7,6 +7,8 @@ const BloodRequest = require('./BloodRequest');
 const DonorResponse = require('./DonorResponse');
 const Notification = require('./Notification');
 const PasswordReset = require('./PasswordReset');
+const ActivityLog = require('./ActivityLog');
+const AdminSettings = require('./AdminSettings');
 
 /**
  * Builds a query condition matching either MongoDB ObjectId or legacy numeric ID
@@ -38,5 +40,7 @@ module.exports = {
   DonorResponse,
   Notification,
   PasswordReset,
+  ActivityLog,
+  AdminSettings,
   buildIdQuery,
 };

@@ -27,8 +27,14 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['donor', 'receiver'],
+      enum: ['donor', 'receiver', 'admin'],
       required: true,
+      index: true,
+    },
+    status: {
+      type: String,
+      enum: ['Active', 'Blocked'],
+      default: 'Active',
       index: true,
     },
   },

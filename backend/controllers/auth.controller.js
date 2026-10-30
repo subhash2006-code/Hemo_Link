@@ -3,7 +3,7 @@
 
 const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
-const { User, DonorProfile, ReceiverProfile, PasswordReset } = require('../models');
+const { User, DonorProfile, ReceiverProfile, PasswordReset, ActivityLog } = require('../models');
 const { sendWelcomeEmail, sendPasswordResetEmail, sendBloodRequestAlert } = require('../services/email.service');
 
 // ─── Helper: generate JWT ────────────────────────────────────
@@ -23,6 +23,9 @@ function generateToken(user, profileComplete) {
 // ─── Helper: check profile complete ─────────────────────────
 async function isProfileComplete(userId, role) {
   try {
+    if (role === 'admin') {
+      return true;
+    }
     if (role === 'donor') {
       const exists = await DonorProfile.exists({ user_id: userId });
       return exists !== null;
@@ -127,10 +130,27 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
 
+    if (user.status === 'Blocked') {
+      return res.status(403).json({ message: 'Your account has been deactivated. Please contact support.' });
+    }
+
     // Check if profile is complete
     const profileComplete = await isProfileComplete(user._id, user.role);
 
     const token = generateToken(user, profileComplete);
+
+    // If admin, log activity
+    if (user.role === 'admin') {
+      ActivityLog.create({
+        action: 'ADMIN_LOGIN',
+        actor_id: user._id,
+        actor_name: user.full_name,
+        actor_email: user.email,
+        target_type: 'Auth',
+        details: `Administrator ${user.full_name} logged in.`,
+        ip_address: req.ip || req.connection?.remoteAddress || '',
+      }).catch(err => console.error('Activity log error:', err));
+    }
 
     return res.status(200).json({
       message: 'Login successful!',

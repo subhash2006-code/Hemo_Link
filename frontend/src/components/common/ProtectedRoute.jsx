@@ -24,13 +24,15 @@ export default function ProtectedRoute({ allowedRole }) {
 
   // If a specific role is required and user has wrong role → redirect to correct dashboard
   if (allowedRole && user.role !== allowedRole) {
-    const redirect = user.role === 'donor' ? '/donor/dashboard' : '/receiver/dashboard';
+    let redirect = '/receiver/dashboard';
+    if (user.role === 'admin') redirect = '/admin/dashboard';
+    else if (user.role === 'donor') redirect = '/donor/dashboard';
     return <Navigate to={redirect} replace />;
   }
 
   return (
     <>
-      {!profileComplete && <ExtraDetailsModal isStrict={true} />}
+      {!profileComplete && user.role !== 'admin' && <ExtraDetailsModal isStrict={true} />}
       <Outlet />
     </>
   );
