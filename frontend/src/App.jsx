@@ -11,6 +11,7 @@ import ResetPassword  from './pages/auth/ResetPassword';
 
 // Public emergency request page (sharable without login)
 import PublicRequestView from './pages/public/PublicRequestView';
+import LandingPage       from './pages/public/LandingPage';
 
 // Donor pages
 import DonorDashboard from './pages/donor/DonorDashboard';
@@ -31,8 +32,8 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 // ─── Root redirect based on auth state ────────────────────
 function RootRedirect() {
   const { isAuthenticated, user } = useAuth();
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return user.role === 'donor'
+  if (!isAuthenticated) return <LandingPage />;
+  return user?.role === 'donor'
     ? <Navigate to="/donor/dashboard"    replace />
     : <Navigate to="/receiver/dashboard" replace />;
 }
@@ -44,6 +45,7 @@ export default function App() {
       <Route path="/" element={<RootRedirect />} />
 
       {/* Public Routes (No authentication required) */}
+      <Route path="/landing"         element={<LandingPage />} />
       <Route path="/login"           element={<Login />} />
       <Route path="/signup"          element={<Signup />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
