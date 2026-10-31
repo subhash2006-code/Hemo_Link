@@ -2,11 +2,12 @@
 // Global auth state: JWT token, user info, role, profileComplete flag
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { authApi } from '../services/api';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user,    setUser]    = useState(null);   // { id, full_name, email, role, profileComplete }
+  const [user,    setUser]    = useState(null);   // { id, full_name, email, role, roles, activeRole, profileComplete }
   const [token,   setToken]   = useState(null);
   const [loading, setLoading] = useState(true);   // true on first load (reading localStorage)
 
@@ -43,6 +44,30 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
+  // ── Switch Active Role (without logging out) ──────────────
+  const switchRole = useCallback(async (targetRole) => {
+    const res = await authApi.switchRole(targetRole);
+    if (res.token && res.user) {
+      setToken(res.token);
+      setUser(res.user);
+      localStorage.setItem('hemolink_token', res.token);
+      localStorage.setItem('hemolink_user',  JSON.stringify(res.user));
+    }
+    return res;
+  }, []);
+
+  // ── Add New Role to Account ───────────────────────────────
+  const addRole = useCallback(async (newRole) => {
+    const res = await authApi.addRole(newRole);
+    if (res.token && res.user) {
+      setToken(res.token);
+      setUser(res.user);
+      localStorage.setItem('hemolink_token', res.token);
+      localStorage.setItem('hemolink_user',  JSON.stringify(res.user));
+    }
+    return res;
+  }, []);
+
   // ── Logout ────────────────────────────────────────────────
   const logout = useCallback(() => {
     setToken(null);
@@ -52,16 +77,22 @@ export function AuthProvider({ children }) {
   }, []);
 
   const isAuthenticated   = Boolean(token && user);
-  const isDonor           = user?.role === 'donor';
-  const isReceiver        = user?.role === 'receiver';
-  const isAdmin           = user?.role === 'admin';
+  const roles             = Array.isArray(user?.roles) && user.roles.length > 0
+    ? user.roles
+    : (user?.role ? [user.role] : []);
+  const activeRole        = user?.activeRole || user?.role || 'donor';
+  const isDonor           = activeRole === 'donor';
+  const isReceiver        = activeRole === 'receiver';
+  const isAdmin           = roles.includes('admin') || user?.role === 'admin';
+  const hasMultipleRoles  = roles.includes('donor') && roles.includes('receiver');
   const profileComplete   = user?.profileComplete ?? false;
 
   return (
     <AuthContext.Provider value={{
       user, token, loading,
       isAuthenticated, isDonor, isReceiver, isAdmin, profileComplete,
-      login, logout, updateUser,
+      roles, activeRole, hasMultipleRoles,
+      login, logout, updateUser, switchRole, addRole,
     }}>
       {children}
     </AuthContext.Provider>

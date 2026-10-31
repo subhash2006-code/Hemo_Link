@@ -42,7 +42,14 @@ async function verifyToken(req, res, next) {
 // Role guard — pass 'donor' or 'receiver'
 function requireRole(role) {
   return (req, res, next) => {
-    if (!req.user || req.user.role !== role) {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Access denied. No user authenticated.' });
+    }
+    const userRoles = Array.isArray(req.user.roles) && req.user.roles.length > 0
+      ? req.user.roles
+      : [req.user.role].filter(Boolean);
+
+    if (!userRoles.includes(role)) {
       return res.status(403).json({ message: `Access denied. ${role} role required.` });
     }
     next();
@@ -51,7 +58,14 @@ function requireRole(role) {
 
 // Admin guard — strictly verifies role === 'admin'
 function requireAdmin(req, res, next) {
-  if (!req.user || req.user.role !== 'admin') {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Access denied. No user authenticated.' });
+  }
+  const userRoles = Array.isArray(req.user.roles) && req.user.roles.length > 0
+    ? req.user.roles
+    : [req.user.role].filter(Boolean);
+
+  if (!userRoles.includes('admin')) {
     return res.status(403).json({ message: 'Access denied. Administrator privileges required.' });
   }
   next();

@@ -24,13 +24,19 @@ router.post('/create-admin',     adminController.createAdminUser);
 router.get('/donors',    adminController.getDonors);
 router.get('/receivers', adminController.getReceivers);
 
-// ─── Blood Requests ───
+// ─── Blood Requests (supports both /requests and /blood-requests) ───
+router.get('/requests',                   adminController.getBloodRequests);
+router.get('/requests/:id',               adminController.getBloodRequestById);
+router.patch('/requests/:id/status',       adminController.updateBloodRequestStatus);
+router.delete('/requests/:id',            adminController.deleteBloodRequest);
 router.get('/blood-requests',             adminController.getBloodRequests);
 router.get('/blood-requests/:id',         adminController.getBloodRequestById);
 router.patch('/blood-requests/:id/status', adminController.updateBloodRequestStatus);
 router.delete('/blood-requests/:id',      adminController.deleteBloodRequest);
 
-// ─── Emergency Requests ───
+// ─── Emergency Requests (supports both /emergency and /emergency-requests) ───
+router.get('/emergency',                        adminController.getEmergencyRequests);
+router.post('/emergency/:id/broadcast',          adminController.broadcastEmergency);
 router.get('/emergency-requests',               adminController.getEmergencyRequests);
 router.post('/emergency-requests/:id/broadcast', adminController.broadcastEmergency);
 
@@ -38,8 +44,9 @@ router.post('/emergency-requests/:id/broadcast', adminController.broadcastEmerge
 router.get('/analytics', adminController.getAnalytics);
 router.get('/reports',   adminController.getReports);
 
-// ─── Activity Logs ───
-router.get('/logs', adminController.getActivityLogs);
+// ─── Activity Logs (supports both /activity-logs and /logs) ───
+router.get('/activity-logs', adminController.getActivityLogs);
+router.get('/logs',          adminController.getActivityLogs);
 
 // ─── System Settings ───
 router.get('/settings', adminController.getSettings);

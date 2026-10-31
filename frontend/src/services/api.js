@@ -33,6 +33,8 @@ const getToken = () => localStorage.getItem('hemolink_token');
 export const authApi = {
   signup:        (body) => request('/api/auth/signup',         { method: 'POST', body: JSON.stringify(body) }),
   login:         (body) => request('/api/auth/login',          { method: 'POST', body: JSON.stringify(body) }),
+  switchRole:    (role) => request('/api/auth/switch-role',    { method: 'POST', body: JSON.stringify({ role }) }, getToken()),
+  addRole:       (role) => request('/api/auth/add-role',       { method: 'POST', body: JSON.stringify({ role }) }, getToken()),
   forgotPassword:(body) => request('/api/auth/forgot-password',{ method: 'POST', body: JSON.stringify(body) }),
   resetPassword: (body) => request('/api/auth/reset-password', { method: 'POST', body: JSON.stringify(body) }),
   getMe:         ()     => request('/api/auth/me', {}, getToken()),
@@ -132,18 +134,18 @@ export const adminApi = {
     return request(`/api/admin/receivers${qs ? '?' + qs : ''}`, {}, getToken());
   },
 
-  // Blood Requests
+  // Blood Requests (supports /requests and /blood-requests)
   getBloodRequests: (params = {}) => {
     const qs = new URLSearchParams(params).toString();
-    return request(`/api/admin/blood-requests${qs ? '?' + qs : ''}`, {}, getToken());
+    return request(`/api/admin/requests${qs ? '?' + qs : ''}`, {}, getToken());
   },
-  getBloodRequestById: (id) => request(`/api/admin/blood-requests/${id}`, {}, getToken()),
-  updateBloodRequestStatus: (id, status) => request(`/api/admin/blood-requests/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, getToken()),
-  deleteBloodRequest: (id) => request(`/api/admin/blood-requests/${id}`, { method: 'DELETE' }, getToken()),
+  getBloodRequestById: (id) => request(`/api/admin/requests/${id}`, {}, getToken()),
+  updateBloodRequestStatus: (id, status) => request(`/api/admin/requests/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, getToken()),
+  deleteBloodRequest: (id) => request(`/api/admin/requests/${id}`, { method: 'DELETE' }, getToken()),
 
-  // Emergency Requests
-  getEmergencyRequests: () => request('/api/admin/emergency-requests', {}, getToken()),
-  broadcastEmergency:   (id) => request(`/api/admin/emergency-requests/${id}/broadcast`, { method: 'POST' }, getToken()),
+  // Emergency Requests (supports /emergency and /emergency-requests)
+  getEmergencyRequests: () => request('/api/admin/emergency', {}, getToken()),
+  broadcastEmergency:   (id) => request(`/api/admin/emergency/${id}/broadcast`, { method: 'POST' }, getToken()),
 
   // Analytics & Reports
   getAnalytics:     () => request('/api/admin/analytics', {}, getToken()),
@@ -155,7 +157,7 @@ export const adminApi = {
   // Activity Logs
   getActivityLogs:  (params = {}) => {
     const qs = new URLSearchParams(params).toString();
-    return request(`/api/admin/logs${qs ? '?' + qs : ''}`, {}, getToken());
+    return request(`/api/admin/activity-logs${qs ? '?' + qs : ''}`, {}, getToken());
   },
 
   // System Settings

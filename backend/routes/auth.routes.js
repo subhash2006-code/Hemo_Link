@@ -20,6 +20,12 @@ router.post('/reset-password', authCtrl.resetPassword);
 // GET  /api/auth/me  (protected)
 router.get('/me', verifyToken, authCtrl.getMe);
 
+// POST /api/auth/switch-role (protected)
+router.post('/switch-role', verifyToken, authCtrl.switchRole);
+
+// POST /api/auth/add-role (protected)
+router.post('/add-role', verifyToken, authCtrl.addRole);
+
 // POST /api/auth/test-email (to verify email notifications)
 router.post('/test-email', authCtrl.testEmail);
 

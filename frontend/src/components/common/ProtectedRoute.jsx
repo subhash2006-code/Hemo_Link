@@ -20,14 +20,32 @@ export default function ProtectedRoute({ allowedRole }) {
     );
   }
 
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) {
+    if (allowedRole === 'admin') {
+      return <Navigate to="/admin/login" replace />;
+    }
+    return <Navigate to="/login" replace />;
+  }
 
-  // If a specific role is required and user has wrong role → redirect to correct dashboard
-  if (allowedRole && user.role !== allowedRole) {
-    let redirect = '/receiver/dashboard';
-    if (user.role === 'admin') redirect = '/admin/dashboard';
-    else if (user.role === 'donor') redirect = '/donor/dashboard';
-    return <Navigate to={redirect} replace />;
+  const userRoles = Array.isArray(user?.roles) && user?.roles.length > 0
+    ? user.roles
+    : [user?.role || 'donor'];
+
+  // Role verification
+  if (allowedRole) {
+    if (allowedRole === 'admin') {
+      if (!userRoles.includes('admin')) {
+        let redirect = user.role === 'donor' ? '/donor/dashboard' : '/receiver/dashboard';
+        return <Navigate to={redirect} replace />;
+      }
+    } else {
+      if (!userRoles.includes(allowedRole)) {
+        let redirect = '/receiver/dashboard';
+        if (userRoles.includes('admin')) redirect = '/admin/dashboard';
+        else if (userRoles.includes('donor')) redirect = '/donor/dashboard';
+        return <Navigate to={redirect} replace />;
+      }
+    }
   }
 
   return (

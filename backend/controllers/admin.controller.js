@@ -49,8 +49,8 @@ exports.getDashboardData = async (req, res) => {
       donorProfiles,
     ] = await Promise.all([
       User.countDocuments(),
-      User.countDocuments({ role: 'donor' }),
-      User.countDocuments({ role: 'receiver' }),
+      User.countDocuments({ $or: [{ roles: 'donor' }, { role: 'donor' }] }),
+      User.countDocuments({ $or: [{ roles: 'receiver' }, { role: 'receiver' }] }),
       DonorProfile.countDocuments({ is_available: true }),
       BloodRequest.countDocuments({
         urgency: { $in: ['Critical', 'High'] },
@@ -192,8 +192,8 @@ exports.getStats = async (req, res) => {
     const [totalUsers, totalDonors, totalReceivers, activeDonors, emergencyRequests, openRequests, fulfilledRequests] =
       await Promise.all([
         User.countDocuments(),
-        User.countDocuments({ role: 'donor' }),
-        User.countDocuments({ role: 'receiver' }),
+        User.countDocuments({ $or: [{ roles: 'donor' }, { role: 'donor' }] }),
+        User.countDocuments({ $or: [{ roles: 'receiver' }, { role: 'receiver' }] }),
         DonorProfile.countDocuments({ is_available: true }),
         BloodRequest.countDocuments({ urgency: { $in: ['Critical', 'High'] }, status: 'Open' }),
         BloodRequest.countDocuments({ status: 'Open' }),

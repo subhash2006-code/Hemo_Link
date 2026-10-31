@@ -7,12 +7,19 @@ const { User, DonorProfile, ReceiverProfile, PasswordReset, ActivityLog } = requ
 const { sendWelcomeEmail, sendPasswordResetEmail, sendBloodRequestAlert } = require('../services/email.service');
 
 // ─── Helper: generate JWT ────────────────────────────────────
-function generateToken(user, profileComplete) {
+function generateToken(user, profileComplete, activeRole) {
+  const roles = Array.isArray(user.roles) && user.roles.length > 0
+    ? [...new Set(user.roles)]
+    : [user.role || 'donor'];
+  const resolvedRole = activeRole || user.activeRole || roles[0] || user.role || 'donor';
+
   return jwt.sign(
     {
       id:              user._id ? user._id.toString() : user.id,
       email:           user.email,
-      role:            user.role,
+      roles:           roles,
+      activeRole:      resolvedRole,
+      role:            resolvedRole, // Backwards compatibility for existing code
       profileComplete: profileComplete,
     },
     process.env.JWT_SECRET,
@@ -29,10 +36,11 @@ async function isProfileComplete(userId, role) {
     if (role === 'donor') {
       const exists = await DonorProfile.exists({ user_id: userId });
       return exists !== null;
-    } else {
+    } else if (role === 'receiver') {
       const exists = await ReceiverProfile.exists({ user_id: userId });
       return exists !== null;
     }
+    return false;
   } catch (err) {
     console.error('isProfileComplete error:', err);
     return false;
@@ -41,60 +49,134 @@ async function isProfileComplete(userId, role) {
 
 // ════════════════════════════════════════════════════════════
 // POST /api/auth/signup
-// Body: { full_name, email, password, role }
+// Body: { full_name, email, password, role, roles, phone }
+// Supports: donor, receiver, both (Donor + Receiver in 1 account)
+// Updates existing account if user adds another role
 // ════════════════════════════════════════════════════════════
 exports.signup = async (req, res) => {
   try {
-    const { full_name, email, password, role } = req.body;
+    const { full_name, email, password, role, roles, phone } = req.body;
 
-    // Validate
-    if (!full_name || !email || !password || !role) {
+    // Validate presence
+    if (!full_name || !email || !password || (!role && (!roles || !roles.length))) {
       return res.status(400).json({ message: 'All fields are required.' });
     }
-    if (!['donor', 'receiver'].includes(role)) {
-      return res.status(400).json({ message: 'Role must be donor or receiver.' });
+
+    // Determine requested roles
+    let requestedRoles = [];
+    if (Array.isArray(roles) && roles.length > 0) {
+      requestedRoles = roles;
+    } else if (role === 'both') {
+      requestedRoles = ['donor', 'receiver'];
+    } else {
+      requestedRoles = [role];
     }
+
+    // Never allow signup as admin through normal registration
+    if (requestedRoles.includes('admin')) {
+      return res.status(400).json({ message: 'Registration as administrator is not permitted.' });
+    }
+
+    const validRoles = requestedRoles.filter(r => ['donor', 'receiver'].includes(r));
+    if (validRoles.length === 0) {
+      return res.status(400).json({ message: 'Role must be donor, receiver, or both.' });
+    }
+
     if (password.length < 6) {
       return res.status(400).json({ message: 'Password must be at least 6 characters.' });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Check if email already exists
-    const existing = await User.findOne({ email: normalizedEmail });
-    if (existing) {
-      return res.status(409).json({ message: 'An account with this email already exists.' });
+    // Check if account already exists
+    let existingUser = await User.findOne({ email: normalizedEmail });
+
+    if (existingUser) {
+      // Check password authentication
+      const isMatch = await bcrypt.compare(password, existingUser.password_hash);
+      if (!isMatch) {
+        return res.status(409).json({
+          message: 'An account with this email already exists. Please enter your existing password to add this role or log in.',
+        });
+      }
+
+      // User authenticated; check which roles are new
+      const currentRoles = existingUser.roles && existingUser.roles.length
+        ? existingUser.roles
+        : [existingUser.role || 'donor'];
+
+      const newRoles = validRoles.filter(r => !currentRoles.includes(r));
+
+      if (newRoles.length === 0) {
+        return res.status(409).json({
+          message: 'An account with this email already has all requested roles. Please log in directly.',
+        });
+      }
+
+      // Add new role(s) to existing user account without creating duplicate
+      existingUser.roles = [...new Set([...currentRoles, ...validRoles])];
+      existingUser.activeRole = validRoles[0] || existingUser.activeRole;
+      existingUser.role = existingUser.activeRole;
+      if (phone && !existingUser.phone) existingUser.phone = phone.trim();
+
+      await existingUser.save();
+
+      const profileComplete = await isProfileComplete(existingUser._id, existingUser.activeRole);
+      const token = generateToken(existingUser, profileComplete, existingUser.activeRole);
+
+      return res.status(200).json({
+        message: 'Role added successfully to your existing account!',
+        token,
+        hasMultipleRoles: existingUser.roles.filter(r => ['donor', 'receiver'].includes(r)).length > 1,
+        user: {
+          id:              existingUser._id.toString(),
+          full_name:       existingUser.full_name,
+          email:           existingUser.email,
+          roles:           existingUser.roles,
+          activeRole:      existingUser.activeRole,
+          role:            existingUser.activeRole,
+          phone:           existingUser.phone,
+          profileComplete,
+        },
+      });
     }
 
-    // Hash password
+    // Create brand new account
     const salt          = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(password, salt);
 
-    // Create user
     const newUser = await User.create({
       full_name: full_name.trim(),
       email: normalizedEmail,
       password_hash,
-      role,
+      phone: phone ? phone.trim() : '',
+      roles: validRoles,
+      activeRole: validRoles[0],
+      role: validRoles[0],
+      status: 'Active',
     });
 
-    const token = generateToken(newUser, false); // profileComplete = false on signup
+    const token = generateToken(newUser, false, newUser.activeRole);
 
     // Send Welcome Email in background
     sendWelcomeEmail({
       name:  full_name.trim(),
       email: newUser.email,
-      role:  role,
+      role:  validRoles.join(' & '),
     }).catch(err => console.error('Welcome email error:', err));
 
     return res.status(201).json({
       message: 'Account created successfully!',
       token,
+      hasMultipleRoles: validRoles.length > 1,
       user: {
         id:              newUser._id.toString(),
         full_name:       newUser.full_name,
         email:           newUser.email,
-        role:            role,
+        roles:           newUser.roles,
+        activeRole:      newUser.activeRole,
+        role:            newUser.activeRole,
+        phone:           newUser.phone,
         profileComplete: false,
       },
     });
@@ -106,11 +188,11 @@ exports.signup = async (req, res) => {
 
 // ════════════════════════════════════════════════════════════
 // POST /api/auth/login
-// Body: { email, password }
+// Body: { email, password, requestedRole }
 // ════════════════════════════════════════════════════════════
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, requestedRole } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required.' });
@@ -130,17 +212,34 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
 
-    if (user.status === 'Blocked') {
+    if (user.status && user.status.toLowerCase() === 'blocked') {
       return res.status(403).json({ message: 'Your account has been deactivated. Please contact support.' });
     }
 
-    // Check if profile is complete
-    const profileComplete = await isProfileComplete(user._id, user.role);
+    // Resolve roles
+    const roles = user.roles && user.roles.length
+      ? [...new Set(user.roles)]
+      : [user.role || 'donor'];
 
-    const token = generateToken(user, profileComplete);
+    // Determine active role
+    let activeRole = user.activeRole;
+    if (requestedRole && roles.includes(requestedRole)) {
+      activeRole = requestedRole;
+      user.activeRole = requestedRole;
+      user.role = requestedRole;
+      await user.save();
+    } else if (!activeRole || !roles.includes(activeRole)) {
+      activeRole = roles[0];
+    }
+
+    // Check if profile is complete for active role
+    const profileComplete = await isProfileComplete(user._id, activeRole);
+    const token = generateToken(user, profileComplete, activeRole);
+
+    const hasBothRoles = roles.includes('donor') && roles.includes('receiver');
 
     // If admin, log activity
-    if (user.role === 'admin') {
+    if (roles.includes('admin')) {
       ActivityLog.create({
         action: 'ADMIN_LOGIN',
         actor_id: user._id,
@@ -155,11 +254,17 @@ exports.login = async (req, res) => {
     return res.status(200).json({
       message: 'Login successful!',
       token,
+      hasMultipleRoles: hasBothRoles,
+      roles,
+      activeRole,
       user: {
         id:              user._id.toString(),
         full_name:       user.full_name,
         email:           user.email,
-        role:            user.role,
+        roles,
+        activeRole,
+        role:            activeRole,
+        phone:           user.phone,
         profileComplete: profileComplete,
       },
     });
@@ -277,20 +382,117 @@ exports.getMe = async (req, res) => {
     const user = await User.findById(req.user.id).select('-password_hash');
     if (!user) return res.status(404).json({ message: 'User not found.' });
 
-    const profileComplete = await isProfileComplete(user._id, user.role);
+    const roles = user.roles && user.roles.length ? [...new Set(user.roles)] : [user.role || 'donor'];
+    const activeRole = req.user.activeRole || user.activeRole || roles[0] || user.role || 'donor';
+    const profileComplete = await isProfileComplete(user._id, activeRole);
 
     return res.status(200).json({
       user: {
         id:              user._id.toString(),
         full_name:       user.full_name,
         email:           user.email,
-        role:            user.role,
+        roles,
+        activeRole,
+        role:            activeRole,
+        phone:           user.phone,
+        hasMultipleRoles: roles.includes('donor') && roles.includes('receiver'),
         profileComplete,
       },
     });
   } catch (err) {
     console.error('GetMe error:', err);
     return res.status(500).json({ message: 'Server error.' });
+  }
+};
+
+// ════════════════════════════════════════════════════════════
+// POST /api/auth/switch-role  (switch active role for user)
+// Body: { role }
+// ════════════════════════════════════════════════════════════
+exports.switchRole = async (req, res) => {
+  try {
+    const { role } = req.body;
+    if (!role) {
+      return res.status(400).json({ message: 'Role is required.' });
+    }
+
+    const user = await User.findById(req.user.id).select('-password_hash');
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    const roles = user.roles && user.roles.length ? [...new Set(user.roles)] : [user.role || 'donor'];
+    if (!roles.includes(role)) {
+      return res.status(403).json({ message: `Access denied. You do not have the ${role} role on this account.` });
+    }
+
+    user.activeRole = role;
+    user.role = role;
+    await user.save();
+
+    const profileComplete = await isProfileComplete(user._id, role);
+    const token = generateToken(user, profileComplete, role);
+
+    return res.status(200).json({
+      message: `Switched to ${role} mode!`,
+      token,
+      user: {
+        id:              user._id.toString(),
+        full_name:       user.full_name,
+        email:           user.email,
+        roles,
+        activeRole:      role,
+        role:            role,
+        phone:           user.phone,
+        hasMultipleRoles: roles.includes('donor') && roles.includes('receiver'),
+        profileComplete,
+      },
+    });
+  } catch (err) {
+    console.error('Switch role error:', err);
+    return res.status(500).json({ message: 'Server error during role switch.' });
+  }
+};
+
+// ════════════════════════════════════════════════════════════
+// POST /api/auth/add-role  (add role to existing account)
+// Body: { role }
+// ════════════════════════════════════════════════════════════
+exports.addRole = async (req, res) => {
+  try {
+    const { role } = req.body;
+    if (!['donor', 'receiver'].includes(role)) {
+      return res.status(400).json({ message: 'Can only add donor or receiver role.' });
+    }
+
+    const user = await User.findById(req.user.id).select('-password_hash');
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    const currentRoles = user.roles && user.roles.length ? user.roles : [user.role || 'donor'];
+    user.roles = [...new Set([...currentRoles, role])];
+    user.activeRole = role;
+    user.role = role;
+    await user.save();
+
+    const profileComplete = await isProfileComplete(user._id, role);
+    const token = generateToken(user, profileComplete, role);
+
+    return res.status(200).json({
+      message: `Successfully added ${role} role to your account!`,
+      token,
+      user: {
+        id:              user._id.toString(),
+        full_name:       user.full_name,
+        email:           user.email,
+        roles:           user.roles,
+        activeRole:      role,
+        role:            role,
+        phone:           user.phone,
+        hasMultipleRoles: user.roles.includes('donor') && user.roles.includes('receiver'),
+        profileComplete,
+      },
+    });
+  } catch (err) {
+    console.error('Add role error:', err);
+    return res.status(500).json({ message: 'Server error adding role.' });
   }
 };
 

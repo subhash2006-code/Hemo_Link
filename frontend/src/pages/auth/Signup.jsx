@@ -32,7 +32,7 @@ export default function Signup() {
     if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) return 'Valid email is required.';
     if (!form.password || form.password.length < 6) return 'Password must be at least 6 characters.';
     if (form.password !== form.confirmPassword) return 'Passwords do not match.';
-    if (!form.role) return 'Please select your role (Donor or Receiver).';
+    if (!form.role) return 'Please select your account type (Donor, Receiver, or Both).';
     return '';
   }
 
@@ -42,24 +42,29 @@ export default function Signup() {
     if (err) { setError(err); return; }
     setError(''); setLoading(true);
     try {
+      const isBoth = form.role === 'both';
+      const requestedRoles = isBoth ? ['donor', 'receiver'] : [form.role];
       const data = await authApi.signup({
         full_name: form.full_name.trim(),
         email:     form.email.trim(),
         password:  form.password,
         role:      form.role,
+        roles:     requestedRoles,
       });
       login(data.token, data.user);
       addToast({
-        title: 'Account Created Successfully! 🎉',
-        message: `Welcome to HemoLink as a ${form.role.toUpperCase()}.`,
+        title: 'Account Ready! 🎉',
+        message: isBoth
+          ? 'Welcome to HemoLink! You can access both Donor and Receiver modes.'
+          : `Welcome to HemoLink as a ${form.role.toUpperCase()}.`,
         type: 'success',
       });
       if (redirect) {
         navigate(redirect, { replace: true });
-      } else if (data.user.role === 'donor') {
-        navigate('/donor/dashboard', { replace: true });
-      } else {
+      } else if (data.user.activeRole === 'receiver' || data.user.role === 'receiver') {
         navigate('/receiver/dashboard', { replace: true });
+      } else {
+        navigate('/donor/dashboard', { replace: true });
       }
     } catch (err) {
       setError(err.message);
@@ -123,6 +128,21 @@ export default function Signup() {
               <span className="role-icon">🏥</span>
               <span className="role-name">Patient / Receiver</span>
               <span className="role-desc">I need blood for patients or emergency hospital care</span>
+            </button>
+
+            <button
+              type="button"
+              className={`role-card role-card--both ${form.role === 'both' ? 'role-card--active' : ''}`}
+              onClick={() => {
+                set('role', 'both');
+                addToast({ title: 'Both Selected 🩸🏥', message: 'You can give blood AND request blood under one account!' });
+              }}
+            >
+              <span className="role-icon">🤝</span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                <span className="role-name">Both (Donor & Receiver)</span>
+                <span className="role-desc">Single account to donate blood and request blood</span>
+              </div>
             </button>
           </div>
         </div>

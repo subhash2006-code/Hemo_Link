@@ -13,13 +13,33 @@ const NAV_LINKS = [
 ];
 
 export default function DonorLayout({ children }) {
-  const { user, logout } = useAuth();
+  const { user, logout, switchRole, addRole, roles } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   function handleLogout() {
     logout();
     navigate('/login', { replace: true });
+  }
+
+  async function handleSwitchToReceiver() {
+    try {
+      await switchRole('receiver');
+      navigate('/receiver/dashboard');
+    } catch (err) {
+      console.error('Role switch error:', err);
+    }
+  }
+
+  async function handleEnableReceiver() {
+    if (window.confirm('Enable Receiver capabilities on this account? You will be able to search donors and post blood requests using the same account.')) {
+      try {
+        await addRole('receiver');
+        navigate('/receiver/dashboard');
+      } catch (err) {
+        alert(err.message || 'Error adding receiver role.');
+      }
+    }
   }
 
   return (
@@ -43,6 +63,56 @@ export default function DonorLayout({ children }) {
             </NavLink>
           ))}
         </nav>
+
+        {/* ── Role Switcher / Add Role ── */}
+        <div style={{ padding: '0 12px 14px' }}>
+          {(roles || []).includes('receiver') ? (
+            <button
+              type="button"
+              onClick={handleSwitchToReceiver}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: '9px 12px',
+                borderRadius: 8,
+                border: '1px solid rgba(220, 38, 38, 0.4)',
+                background: 'rgba(220, 38, 38, 0.08)',
+                color: '#b91c1c',
+                fontWeight: 700,
+                fontSize: 12.5,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              <span>🔄</span> Switch to Receiver Mode
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleEnableReceiver}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                padding: '8px 10px',
+                borderRadius: 8,
+                border: '1px dashed #d1d5db',
+                background: '#f9fafb',
+                color: '#4b5563',
+                fontWeight: 600,
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+            >
+              <span>➕</span> Enable Receiver Mode
+            </button>
+          )}
+        </div>
 
         <div className="dl-user">
           <div className="dl-avatar">{user?.full_name?.charAt(0) || 'D'}</div>

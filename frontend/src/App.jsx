@@ -89,7 +89,9 @@ export default function App() {
         <Route path="/admin/users"              element={<AdminUsers />} />
         <Route path="/admin/donors"             element={<AdminDonors />} />
         <Route path="/admin/receivers"          element={<AdminReceivers />} />
+        <Route path="/admin/requests"           element={<AdminBloodRequests />} />
         <Route path="/admin/blood-requests"     element={<AdminBloodRequests />} />
+        <Route path="/admin/emergency"          element={<AdminEmergencyRequests />} />
         <Route path="/admin/emergency-requests" element={<AdminEmergencyRequests />} />
         <Route path="/admin/analytics"          element={<AdminAnalytics />} />
         <Route path="/admin/reports"            element={<AdminReports />} />

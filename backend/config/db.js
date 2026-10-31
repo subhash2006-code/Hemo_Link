@@ -17,17 +17,24 @@ async function seedDefaultData() {
     const passwordHash = await bcrypt.hash('Test@1234', salt);
     const adminHash = await bcrypt.hash('Admin@12345', salt);
 
-    // 1. Seed default admin if none exists
-    let admin = await User.findOne({ role: 'admin' });
+    // 1. Seed default admin if none exists or ensure admin role
+    let admin = await User.findOne({ $or: [{ role: 'admin' }, { email: 'admin@hemolink.com' }] });
     if (!admin) {
       admin = await User.create({
         full_name: 'System Administrator',
         email: 'admin@hemolink.com',
         password_hash: adminHash,
         role: 'admin',
+        roles: ['admin'],
+        activeRole: 'admin',
         status: 'Active',
       });
       console.log('🛡️ Seeded default admin account: admin@hemolink.com / Admin@12345');
+    } else if (!admin.roles || !admin.roles.includes('admin') || admin.role !== 'admin') {
+      admin.role = 'admin';
+      admin.roles = ['admin'];
+      admin.activeRole = 'admin';
+      await admin.save();
     }
 
     // 2. Seed default donor if none exists

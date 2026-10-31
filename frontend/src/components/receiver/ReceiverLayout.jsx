@@ -14,13 +14,33 @@ const NAV_LINKS = [
 ];
 
 export default function ReceiverLayout({ children }) {
-  const { user, logout } = useAuth();
+  const { user, logout, switchRole, addRole, roles } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   function handleLogout() {
     logout();
     navigate('/login', { replace: true });
+  }
+
+  async function handleSwitchToDonor() {
+    try {
+      await switchRole('donor');
+      navigate('/donor/dashboard');
+    } catch (err) {
+      console.error('Role switch error:', err);
+    }
+  }
+
+  async function handleEnableDonor() {
+    if (window.confirm('Enable Donor capabilities on this account? You will be able to register blood donation details and respond to requests with the same account.')) {
+      try {
+        await addRole('donor');
+        navigate('/donor/dashboard');
+      } catch (err) {
+        alert(err.message || 'Error adding donor role.');
+      }
+    }
   }
 
   return (
@@ -43,6 +63,56 @@ export default function ReceiverLayout({ children }) {
             </NavLink>
           ))}
         </nav>
+
+        {/* ── Role Switcher / Add Role ── */}
+        <div style={{ padding: '0 12px 14px' }}>
+          {(roles || []).includes('donor') ? (
+            <button
+              type="button"
+              onClick={handleSwitchToDonor}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: '9px 12px',
+                borderRadius: 8,
+                border: '1px solid rgba(220, 38, 38, 0.4)',
+                background: 'rgba(220, 38, 38, 0.08)',
+                color: '#b91c1c',
+                fontWeight: 700,
+                fontSize: 12.5,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              <span>🔄</span> Switch to Donor Mode
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleEnableDonor}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                padding: '8px 10px',
+                borderRadius: 8,
+                border: '1px dashed #d1d5db',
+                background: '#f9fafb',
+                color: '#4b5563',
+                fontWeight: 600,
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+            >
+              <span>➕</span> Enable Donor Mode
+            </button>
+          )}
+        </div>
 
         <div className="rl-user">
           <div className="rl-avatar">{user?.full_name?.charAt(0) || 'R'}</div>

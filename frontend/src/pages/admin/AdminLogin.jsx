@@ -36,8 +36,12 @@ export default function AdminLogin() {
         password: form.password,
       });
 
-      if (data.user?.role !== 'admin') {
-        throw new Error('Access restricted to System Administrators. Please log in through the public member portal.');
+      const userRoles = Array.isArray(data.user?.roles) && data.user.roles.length > 0
+        ? data.user.roles
+        : [data.user?.role].filter(Boolean);
+
+      if (!userRoles.includes('admin')) {
+        throw new Error('Access restricted to System Administrators. Authorized personnel only.');
       }
 
       login(data.token, data.user);
