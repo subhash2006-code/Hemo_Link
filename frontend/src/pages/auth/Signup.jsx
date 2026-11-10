@@ -141,33 +141,37 @@ export default function Signup() {
           </div>
 
           <div className="form-group">
-            <label>Create Password</label>
-            <div className="password-wrapper">
-              <input
-  type={showPwd ? 'text' : 'password'}
-  placeholder="Enter exactly 6 characters"
-  value={form.password}
-  minLength={6}
-  maxLength={6}
-  onChange={e => set('password', e.target.value)}
-  className="auth-input"
-  required
-/>
-              <button type="button" className="eye-btn" onClick={() => setShowPwd(p => !p)}>
-                {showPwd ? '🙈' : '👁️'}
-              </button>
-            </div>
-          </div>
+  <label>Create Password</label>
+  <div className="password-wrapper">
+    <input
+      type={showPwd ? 'text' : 'password'}
+      placeholder="Enter exactly 6 characters"
+      value={form.password}
+      minLength={6}
+      maxLength={6}
+      onChange={e => set('password', e.target.value)}
+      className="auth-input"
+      required
+    />
+    <button
+      type="button"
+      className="eye-btn"
+      onClick={() => setShowPwd(p => !p)}
+    >
+      {showPwd ? '🙈' : '👁️'}
+    </button>
+  </div>
+</div>
 
           <div className="form-group">
             <label>Confirm Password</label>
             <input
   type={showPwd ? 'text' : 'password'}
-  placeholder="confirm your password"
-  value={form.password}
+  placeholder="Enter password again"
+  value={form.confirmPassword}
   minLength={6}
   maxLength={6}
-  onChange={e => set('password', e.target.value)}
+  onChange={e => set('confirmPassword', e.target.value)}
   className="auth-input"
   required
 />
