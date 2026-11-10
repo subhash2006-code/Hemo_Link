@@ -106,8 +106,8 @@ export default function Login() {
   type={showPwd ? 'text' : 'password'}
   placeholder="Enter your password"
   value={form.password}
-  minLength={8}
-  maxLength={64}
+  minLength={6}
+  maxLength={6}
   onChange={e => set('password', e.target.value)}
   className="auth-input"
   required
