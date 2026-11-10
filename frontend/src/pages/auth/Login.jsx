@@ -102,9 +102,18 @@ export default function Login() {
           <div className="form-group">
             <label>Password</label>
             <div className="password-wrapper">
-              <input type={showPwd ? 'text' : 'password'} placeholder="Enter your password"
-                value={form.password} onChange={e => set('password', e.target.value)}
-                className="auth-input" required />
+              ```jsx id="x7k4m9"
+<input
+  type={showPwd ? 'text' : 'password'}
+  placeholder="Enter your password"
+  value={form.password}
+  minLength={8}
+  maxLength={64}
+  onChange={e => set('password', e.target.value)}
+  className="auth-input"
+  required
+/>
+```
               <button type="button" className="eye-btn" onClick={() => setShowPwd(p => !p)}>
                 {showPwd ? '🙈' : '👁️'}
               </button>
