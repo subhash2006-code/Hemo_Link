@@ -143,9 +143,16 @@ export default function Signup() {
           <div className="form-group">
             <label>Create Password</label>
             <div className="password-wrapper">
-              <input type={showPwd ? 'text' : 'password'} placeholder="At least 6 characters"
-                value={form.password} onChange={e => set('password', e.target.value)}
-                className="auth-input" required />
+              <input
+  type={showPwd ? 'text' : 'password'}
+  placeholder="Enter exactly 6 characters"
+  value={form.password}
+  minLength={6}
+  maxLength={6}
+  onChange={e => set('password', e.target.value)}
+  className="auth-input"
+  required
+/>
               <button type="button" className="eye-btn" onClick={() => setShowPwd(p => !p)}>
                 {showPwd ? '🙈' : '👁️'}
               </button>
@@ -154,9 +161,16 @@ export default function Signup() {
 
           <div className="form-group">
             <label>Confirm Password</label>
-            <input type={showPwd ? 'text' : 'password'} placeholder="Repeat your password"
-              value={form.confirmPassword} onChange={e => set('confirmPassword', e.target.value)}
-              className="auth-input" required />
+            <input
+  type={showPwd ? 'text' : 'password'}
+  placeholder="confirm your password"
+  value={form.password}
+  minLength={6}
+  maxLength={6}
+  onChange={e => set('password', e.target.value)}
+  className="auth-input"
+  required
+/>
           </div>
 
           <button type="submit" className="auth-btn-primary" disabled={loading}>
