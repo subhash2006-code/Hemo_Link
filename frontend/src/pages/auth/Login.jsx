@@ -102,7 +102,6 @@ export default function Login() {
           <div className="form-group">
             <label>Password</label>
             <div className="password-wrapper">
-              ```jsx id="x7k4m9"
 <input
   type={showPwd ? 'text' : 'password'}
   placeholder="Enter your password"
@@ -113,7 +112,6 @@ export default function Login() {
   className="auth-input"
   required
 />
-```
               <button type="button" className="eye-btn" onClick={() => setShowPwd(p => !p)}>
                 {showPwd ? '🙈' : '👁️'}
               </button>
